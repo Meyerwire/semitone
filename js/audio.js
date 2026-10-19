@@ -16,11 +16,23 @@ window.SemitoneAudio = (() => {
   let activeStops = [];
   const activeMidiNotes = new Set();
   let noteListener = null;
+  let tempoListener = null;
+
+  const TEMPO_PRESETS = {
+    very_slow: 60,
+    slow: 90,
+    normal: 125,
+    fast: 165,
+    very_fast: 210
+  };
 
   const settings = {
-    timbre: 'piano',         // 'piano' | 'epiano' | 'strings' | 'pure'
+    timbre: 'piano',               // 'piano' | 'epiano' | 'strings' | 'pure'
     playMode: 'arpeggio_harmonic', // 'ascending' | 'descending' | 'harmonic' | 'arpeggio_harmonic'
-    tempo: 'normal',         // 'slow' | 'normal' | 'fast'
+    tempoPreset: 'normal',         // 'very_slow' | 'slow' | 'normal' | 'fast' | 'very_fast' | 'random' | 'custom'
+    tempoBpm: 125,                 // 40 .. 240 BPM
+    articulation: 'normal',        // 'short' | 'normal' | 'long'
+    lastEffectiveBpm: 125,
     volume: 0.8
   };
 
@@ -232,13 +244,39 @@ window.SemitoneAudio = (() => {
   }
 
   function getTimingParams() {
-    if (settings.tempo === 'slow') {
-      return { noteStepMs: 650, noteDurSec: 0.72, chordDurSec: 1.7 };
+    let bpm = Number(settings.tempoBpm) || 125;
+
+    if (settings.tempoPreset === 'random') {
+      // Zufälliges Tempo zwischen 60 und 200 BPM (in 5er-Schritten)
+      const minBpm = 60;
+      const maxBpm = 200;
+      const steps = Math.floor((maxBpm - minBpm) / 5);
+      bpm = minBpm + Math.floor(Math.random() * (steps + 1)) * 5;
     }
-    if (settings.tempo === 'fast') {
-      return { noteStepMs: 310, noteDurSec: 0.36, chordDurSec: 1.05 };
+
+    bpm = Math.max(40, Math.min(240, bpm));
+    settings.lastEffectiveBpm = bpm;
+
+    if (typeof tempoListener === 'function') {
+      tempoListener(bpm, settings.tempoPreset);
     }
-    return { noteStepMs: 460, noteDurSec: 0.52, chordDurSec: 1.35 };
+
+    // Schrittweite einer Viertelnote in Millisekunden (z.B. 125 BPM -> 480 ms)
+    const noteStepMs = Math.round(60000 / bpm);
+
+    // Tondauer-Faktor je nach gewählter Artikulation (Kurz/Staccato, Normal, Lang/Legato)
+    const artFactor =
+      settings.articulation === 'short'
+        ? 0.55
+        : settings.articulation === 'long'
+        ? 1.55
+        : 1.0;
+
+    const baseNoteSec = (noteStepMs / 1000) * 1.08;
+    const noteDurSec = Math.max(0.14, Math.min(2.6, baseNoteSec * artFactor));
+    const chordDurSec = Math.max(0.45, Math.min(3.4, (noteStepMs / 1000) * 2.75 * artFactor));
+
+    return { noteStepMs, noteDurSec, chordDurSec, bpm };
   }
 
   /**
@@ -293,7 +331,7 @@ window.SemitoneAudio = (() => {
       scheduledTimers.push(timer);
     });
 
-    const chordDelay = sortedAsc.length * (noteStepMs * 0.82) + 140;
+    const chordDelay = sortedAsc.length * (noteStepMs * 0.82) + Math.min(180, noteStepMs * 0.3);
     const chordTimer = setTimeout(() => {
       sortedAsc.forEach((midi) => {
         triggerSingleVoice(midi, chordDurSec, sortedAsc.length);
@@ -311,7 +349,15 @@ window.SemitoneAudio = (() => {
   }
 
   function updateSettings(partial) {
+    if (partial.tempoPreset && TEMPO_PRESETS[partial.tempoPreset]) {
+      settings.tempoBpm = TEMPO_PRESETS[partial.tempoPreset];
+      settings.lastEffectiveBpm = settings.tempoBpm;
+    }
     Object.assign(settings, partial);
+    if (partial.tempoBpm !== undefined) {
+      settings.tempoBpm = Math.max(40, Math.min(240, Number(partial.tempoBpm) || 125));
+      settings.lastEffectiveBpm = settings.tempoBpm;
+    }
     if (partial.volume !== undefined && masterGain && ctx) {
       masterGain.gain.setValueAtTime(settings.volume, ctx.currentTime);
     }
@@ -325,13 +371,19 @@ window.SemitoneAudio = (() => {
     noteListener = cb;
   }
 
+  function onTempoChange(cb) {
+    tempoListener = cb;
+  }
+
   return {
+    TEMPO_PRESETS,
     playSequence,
     playSingleNote,
     stopAll,
     updateSettings,
     getSettings,
-    onActiveNotesChange
+    onActiveNotesChange,
+    onTempoChange
   };
 })();
 

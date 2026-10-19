@@ -294,11 +294,62 @@ window.SemitoneApp = (() => {
       });
     }
 
-    // Tempo
+    // Tempo (Voreinstellung, stufenloser BPM-Regler & Zufalls-Variation)
     const tempoSelect = document.getElementById('ctrl-tempo');
+    const tempoBpmInput = document.getElementById('ctrl-tempo-bpm');
+    const tempoBpmLabel = document.getElementById('ctrl-tempo-bpm-label');
+
+    function syncTempoUi(bpm, preset) {
+      if (tempoBpmInput && preset !== 'random') {
+        tempoBpmInput.value = String(bpm);
+        tempoBpmInput.disabled = false;
+      } else if (tempoBpmInput && preset === 'random') {
+        tempoBpmInput.disabled = true;
+      }
+      if (tempoBpmLabel) {
+        tempoBpmLabel.textContent = preset === 'random' ? `🎲 ${bpm} BPM` : `${bpm} BPM`;
+      }
+    }
+
     if (tempoSelect) {
       tempoSelect.addEventListener('change', (e) => {
-        AudioEngine.updateSettings({ tempo: e.target.value });
+        const preset = e.target.value;
+        AudioEngine.updateSettings({ tempoPreset: preset });
+        const s = AudioEngine.getSettings();
+        syncTempoUi(s.tempoBpm, s.tempoPreset);
+      });
+    }
+
+    if (tempoBpmInput) {
+      tempoBpmInput.addEventListener('input', (e) => {
+        const bpm = Number(e.target.value);
+        // Prüfen, ob der Regler exakt auf einer Voreinstellung steht
+        let matchedPreset = 'custom';
+        Object.entries(AudioEngine.TEMPO_PRESETS || {}).forEach(([key, val]) => {
+          if (val === bpm) matchedPreset = key;
+        });
+        if (tempoSelect) {
+          tempoSelect.value = matchedPreset;
+        }
+        AudioEngine.updateSettings({ tempoPreset: matchedPreset, tempoBpm: bpm });
+        syncTempoUi(bpm, matchedPreset);
+      });
+    }
+
+    if (typeof AudioEngine.onTempoChange === 'function') {
+      AudioEngine.onTempoChange((effectiveBpm, preset) => {
+        if (tempoBpmLabel) {
+          tempoBpmLabel.textContent =
+            preset === 'random' ? `🎲 ${effectiveBpm} BPM` : `${effectiveBpm} BPM`;
+        }
+      });
+    }
+
+    // Tondauer / Artikulation
+    const articulationSelect = document.getElementById('ctrl-articulation');
+    if (articulationSelect) {
+      articulationSelect.addEventListener('change', (e) => {
+        AudioEngine.updateSettings({ articulation: e.target.value });
       });
     }
 

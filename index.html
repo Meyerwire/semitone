@@ -88,12 +88,38 @@
         </select>
       </div>
 
-      <div class="studio-control">
+      <div class="studio-control studio-control-tempo">
         <label for="ctrl-tempo">Tempo</label>
-        <select id="ctrl-tempo">
-          <option value="slow">Ruhig (Langsam)</option>
-          <option value="normal" selected>Mittel (Standard)</option>
-          <option value="fast">Zügig (Schnell)</option>
+        <select id="ctrl-tempo" title="Tempo-Voreinstellung oder zufällige Variation">
+          <option value="very_slow">Sehr langsam (60 BPM)</option>
+          <option value="slow">Ruhig (90 BPM)</option>
+          <option value="normal" selected>Mittel (125 BPM)</option>
+          <option value="fast">Zügig (165 BPM)</option>
+          <option value="very_fast">Sehr schnell (210 BPM)</option>
+          <option value="random">🎲 Variierend (60–200 BPM)</option>
+          <option value="custom">Manuell (Regler)</option>
+        </select>
+        <div class="tempo-slider-wrap" id="tempo-slider-wrap">
+          <input
+            type="range"
+            id="ctrl-tempo-bpm"
+            min="40"
+            max="240"
+            step="5"
+            value="125"
+            aria-label="Tempo in BPM"
+            title="Tempo stufenlos zwischen 40 und 240 BPM einstellen"
+          />
+          <span class="tempo-bpm-badge" id="ctrl-tempo-bpm-label">125 BPM</span>
+        </div>
+      </div>
+
+      <div class="studio-control">
+        <label for="ctrl-articulation">Tondauer</label>
+        <select id="ctrl-articulation" title="Artikulation und Ausklingdauer der Töne">
+          <option value="short">Kurz (Staccato)</option>
+          <option value="normal" selected>Normal (Non-legato)</option>
+          <option value="long">Lang (Legato)</option>
         </select>
       </div>
     </section>
