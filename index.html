@@ -3,8 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#171b22" id="meta-theme-color" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Semitone" />
   <title>Semitone – Musikalische Gehörbildung</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <link rel="manifest" href="manifest.webmanifest" />
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
@@ -32,6 +38,9 @@
       </nav>
 
       <div class="header-right">
+        <button type="button" class="btn btn-primary btn-sm hidden" id="pwa-install-btn" title="Semitone als eigenständige App installieren">
+          ⬇ App installieren
+        </button>
         <button type="button" class="btn btn-secondary btn-sm active" id="toggle-piano-btn" title="Interaktive Klaviatur ein-/ausblenden">
           🎹 Klaviatur
         </button>

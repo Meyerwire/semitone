@@ -127,6 +127,43 @@ window.SemitoneApp = (() => {
     return midi;
   }
 
+  let deferredInstallPrompt = null;
+
+  /**
+   * Registriert den Service Worker und steuert den „App installieren“-Button (PWA).
+   */
+  function setupPwa() {
+    if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+      navigator.serviceWorker.register('sw.js').catch(() => {
+        // Ignorieren falls lokal über file:// geöffnet
+      });
+    }
+
+    const installBtn = document.getElementById('pwa-install-btn');
+    if (!installBtn) return;
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredInstallPrompt = e;
+      installBtn.classList.remove('hidden');
+    });
+
+    installBtn.addEventListener('click', async () => {
+      if (!deferredInstallPrompt) return;
+      deferredInstallPrompt.prompt();
+      try {
+        await deferredInstallPrompt.userChoice;
+      } catch (_) {}
+      deferredInstallPrompt = null;
+      installBtn.classList.add('hidden');
+    });
+
+    window.addEventListener('appinstalled', () => {
+      deferredInstallPrompt = null;
+      installBtn.classList.add('hidden');
+    });
+  }
+
   /**
    * Initialisiert die WebApp nach dem Laden des DOMs.
    */
@@ -134,6 +171,7 @@ window.SemitoneApp = (() => {
     applyTheme(state.theme);
     buildPianoKeyboard();
     bindGlobalControls();
+    setupPwa();
 
     AudioEngine.onActiveNotesChange((activeSet) => {
       updatePianoHighlights(activeSet);
@@ -168,6 +206,10 @@ window.SemitoneApp = (() => {
     const btn = document.getElementById('theme-toggle-btn');
     if (btn) {
       btn.textContent = theme === 'dark' ? '☀ Hell' : '☾ Dunkel';
+    }
+    const metaTheme = document.getElementById('meta-theme-color');
+    if (metaTheme) {
+      metaTheme.setAttribute('content', theme === 'dark' ? '#171b22' : '#ffffff');
     }
   }
 
