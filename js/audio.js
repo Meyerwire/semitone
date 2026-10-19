@@ -36,7 +36,58 @@ window.SemitoneAudio = (() => {
     volume: 0.8
   };
 
+  let iosAudioUnlocked = false;
+  let silentAudioEl = null;
+
+  // 10ms gültiges 16-Bit Mono PCM WAV (Stille), um auf iOS Safari die Medien-AudioSession
+  // trotz aktivem Hardware-Stummschalter (Silent Switch) zu aktivieren
+  const SILENT_WAV_URI =
+    'data:audio/wav;base64,UklGRsQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YaAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+
+  function configureIosAudioSession() {
+    try {
+      if (typeof navigator !== 'undefined' && navigator.audioSession) {
+        navigator.audioSession.type = 'playback';
+      }
+    } catch (_) {}
+  }
+
+  function playSilentHtmlAudio() {
+    try {
+      if (!silentAudioEl && typeof Audio !== 'undefined') {
+        silentAudioEl = new Audio(SILENT_WAV_URI);
+        silentAudioEl.setAttribute('playsinline', 'true');
+        silentAudioEl.setAttribute('webkit-playsinline', 'true');
+        silentAudioEl.preload = 'auto';
+        silentAudioEl.volume = 0.01;
+      }
+      if (silentAudioEl) {
+        const p = silentAudioEl.play();
+        if (p && typeof p.catch === 'function') {
+          p.catch(() => {});
+        }
+      }
+    } catch (_) {}
+  }
+
+  function playSilentWebAudioBuffer() {
+    if (!ctx) return;
+    try {
+      const buffer = ctx.createBuffer(1, 1, 22050);
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(ctx.destination);
+      if (source.start) {
+        source.start(0);
+      } else if (source.noteOn) {
+        source.noteOn(0);
+      }
+    } catch (_) {}
+  }
+
   function initContext() {
+    configureIosAudioSession();
+
     if (!ctx) {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       ctx = new AudioCtx();
@@ -57,15 +108,88 @@ window.SemitoneAudio = (() => {
       // Obertonspektren für Klavier & Streicher/Orgel generieren
       const realPiano = new Float32Array([0, 0, 0, 0, 0, 0, 0, 0, 0]);
       const imagPiano = new Float32Array([0, 1.0, 0.42, 0.22, 0.11, 0.06, 0.03, 0.015, 0.008]);
-      pianoWave = ctx.createPeriodicWave(realPiano, imagPiano, { disableNormalization: false });
+      pianoWave = ctx.createPeriodicWave(realPiano, imagPiano);
 
       const realStrings = new Float32Array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
       const imagStrings = new Float32Array([0, 1.0, 0.55, 0.38, 0.25, 0.16, 0.10, 0.06, 0.03, 0.01]);
-      stringsWave = ctx.createPeriodicWave(realStrings, imagStrings, { disableNormalization: false });
+      stringsWave = ctx.createPeriodicWave(realStrings, imagStrings);
     }
-    if (ctx.state === 'suspended') {
-      ctx.resume();
+
+    if (!iosAudioUnlocked) {
+      playSilentWebAudioBuffer();
+      playSilentHtmlAudio();
+      iosAudioUnlocked = true;
     }
+
+    // Auf iOS Safari kann der Status neben 'suspended' auch 'interrupted' heißen
+    if (ctx.state !== 'running') {
+      try {
+        const res = ctx.resume();
+        if (res && typeof res.catch === 'function') {
+          res.catch(() => {});
+        }
+      } catch (_) {}
+    }
+  }
+
+  /**
+   * Stellt sicher, dass der AudioContext läuft, bevor Oszillatoren auf ctx.currentTime geplant werden.
+   */
+  function whenContextReady(callback) {
+    initContext();
+    if (!ctx) return;
+
+    if (ctx.state === 'running') {
+      callback();
+      return;
+    }
+
+    let executed = false;
+    const runOnce = () => {
+      if (executed) return;
+      executed = true;
+      callback();
+    };
+
+    try {
+      const p = ctx.resume();
+      if (p && typeof p.then === 'function') {
+        p.then(runOnce).catch(runOnce);
+      } else {
+        runOnce();
+      }
+    } catch (_) {
+      runOnce();
+    }
+
+    // Sicherheits-Fallback falls das Promise auf älteren WebKit-Versionen verzögert auflöst
+    const fallbackTimer = setTimeout(runOnce, 120);
+    scheduledTimers.push(fallbackTimer);
+  }
+
+  // Globale Touch-/Klick-Entsperrung für iOS Safari beim ersten Antippen der Seite
+  if (typeof window !== 'undefined') {
+    const unlockEvents = ['touchstart', 'touchend', 'pointerdown', 'click', 'keydown'];
+    const handleFirstGesture = () => {
+      initContext();
+      if (ctx && ctx.state === 'running' && iosAudioUnlocked) {
+        unlockEvents.forEach((evt) =>
+          window.removeEventListener(evt, handleFirstGesture, true)
+        );
+      }
+    };
+    unlockEvents.forEach((evt) =>
+      window.addEventListener(evt, handleFirstGesture, { capture: true, passive: true })
+    );
+
+    // Nach App-Wechsel / Sperrbildschirm auf iOS ('interrupted') bei Rückkehr reaktivieren
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && ctx && ctx.state !== 'running') {
+        try {
+          ctx.resume();
+        } catch (_) {}
+      }
+    });
   }
 
   function notifyListeners() {
@@ -294,50 +418,66 @@ window.SemitoneAudio = (() => {
     const sortedAsc = [...midiNotes].sort((a, b) => a - b);
     const sortedDesc = [...sortedAsc].reverse();
 
-    if (mode === 'harmonic') {
-      sortedAsc.forEach((midi) => {
-        triggerSingleVoice(midi, chordDurSec, sortedAsc.length);
-      });
-      return;
-    }
+    whenContextReady(() => {
+      if (mode === 'harmonic') {
+        sortedAsc.forEach((midi) => {
+          triggerSingleVoice(midi, chordDurSec, sortedAsc.length);
+        });
+        return;
+      }
 
-    if (mode === 'ascending') {
-      sortedAsc.forEach((midi, idx) => {
-        const timer = setTimeout(() => {
+      if (mode === 'ascending') {
+        sortedAsc.forEach((midi, idx) => {
           const isLast = idx === sortedAsc.length - 1;
-          triggerSingleVoice(midi, isLast ? noteDurSec * 1.45 : noteDurSec, 1);
-        }, idx * noteStepMs);
-        scheduledTimers.push(timer);
-      });
-      return;
-    }
+          const dur = isLast ? noteDurSec * 1.45 : noteDurSec;
+          if (idx === 0) {
+            triggerSingleVoice(midi, dur, 1);
+          } else {
+            const timer = setTimeout(() => {
+              triggerSingleVoice(midi, dur, 1);
+            }, idx * noteStepMs);
+            scheduledTimers.push(timer);
+          }
+        });
+        return;
+      }
 
-    if (mode === 'descending') {
-      sortedDesc.forEach((midi, idx) => {
-        const timer = setTimeout(() => {
+      if (mode === 'descending') {
+        sortedDesc.forEach((midi, idx) => {
           const isLast = idx === sortedDesc.length - 1;
-          triggerSingleVoice(midi, isLast ? noteDurSec * 1.45 : noteDurSec, 1);
-        }, idx * noteStepMs);
-        scheduledTimers.push(timer);
-      });
-      return;
-    }
+          const dur = isLast ? noteDurSec * 1.45 : noteDurSec;
+          if (idx === 0) {
+            triggerSingleVoice(midi, dur, 1);
+          } else {
+            const timer = setTimeout(() => {
+              triggerSingleVoice(midi, dur, 1);
+            }, idx * noteStepMs);
+            scheduledTimers.push(timer);
+          }
+        });
+        return;
+      }
 
-    // Standard: 'arpeggio_harmonic' (Gebrochen aufwärts + anschließend als Zusammenklang)
-    sortedAsc.forEach((midi, idx) => {
-      const timer = setTimeout(() => {
-        triggerSingleVoice(midi, noteDurSec * 0.92, 1);
-      }, idx * (noteStepMs * 0.82));
-      scheduledTimers.push(timer);
+      // Standard: 'arpeggio_harmonic' (Gebrochen aufwärts + anschließend als Zusammenklang)
+      sortedAsc.forEach((midi, idx) => {
+        if (idx === 0) {
+          triggerSingleVoice(midi, noteDurSec * 0.92, 1);
+        } else {
+          const timer = setTimeout(() => {
+            triggerSingleVoice(midi, noteDurSec * 0.92, 1);
+          }, idx * (noteStepMs * 0.82));
+          scheduledTimers.push(timer);
+        }
+      });
+
+      const chordDelay = sortedAsc.length * (noteStepMs * 0.82) + Math.min(180, noteStepMs * 0.3);
+      const chordTimer = setTimeout(() => {
+        sortedAsc.forEach((midi) => {
+          triggerSingleVoice(midi, chordDurSec, sortedAsc.length);
+        });
+      }, chordDelay);
+      scheduledTimers.push(chordTimer);
     });
-
-    const chordDelay = sortedAsc.length * (noteStepMs * 0.82) + Math.min(180, noteStepMs * 0.3);
-    const chordTimer = setTimeout(() => {
-      sortedAsc.forEach((midi) => {
-        triggerSingleVoice(midi, chordDurSec, sortedAsc.length);
-      });
-    }, chordDelay);
-    scheduledTimers.push(chordTimer);
   }
 
   /**
@@ -345,7 +485,9 @@ window.SemitoneAudio = (() => {
    */
   function playSingleNote(midi, durationSec = 0.75) {
     initContext();
-    triggerSingleVoice(midi, durationSec, 1);
+    whenContextReady(() => {
+      triggerSingleVoice(midi, durationSec, 1);
+    });
   }
 
   function updateSettings(partial) {
