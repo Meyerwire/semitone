@@ -2,7 +2,7 @@
  * Semitone – Service Worker für Offline-Fähigkeit & PWA-Installation
  */
 
-const CACHE_NAME = 'semitone-pwa-v1.2';
+const CACHE_NAME = 'semitone-pwa-v1.3';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
