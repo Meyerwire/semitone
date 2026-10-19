@@ -223,6 +223,35 @@ input:disabled {
   cursor: not-allowed;
 }
 
+.studio-control-tempo {
+  flex-wrap: wrap;
+}
+
+.tempo-slider-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 0.25rem 0.55rem;
+}
+
+.tempo-slider-wrap input[type="range"] {
+  width: 96px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.tempo-bpm-badge {
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+  min-width: 60px;
+  text-align: right;
+}
+
 /* ==========================================================================
    Buttons & Controls
    ========================================================================== */

@@ -34,6 +34,7 @@ Direktes Anspielen, Vergleichen und Analysieren aller Strukturen per Klick:
 ### 4. Studio-Audio & Interaktive Klaviatur
 - **4 synthetisierte Klangfarben (Web Audio API)**: *Klavier (Konzertflügel)*, *E-Piano (Rhodes)*, *Streicher / Orgel (Dauerton zur Schwebungsanalyse)* und *Reiner Sinus-Referenzton*.
 - **4 Spielweisen**: *Gebrochen + Zusammenklang*, *Melodisch aufsteigend*, *Melodisch absteigend*, *Simultan / Harmonisch*.
+- **Variables Tempo & Tondauer**: Stufenloser BPM-Regler (`40`–`240 BPM`), Tempo-Presets, ein **Zufalls-Modus (`60`–`200 BPM`)** für wechselnde Geschwindigkeiten pro Hörbeispiel sowie wählbare Artikulation/Tondauer (*Kurz / Staccato*, *Normal*, *Lang / Legato*).
 - **Grundton-Wahl**: Fester Bezugston (frei wählbar `C` bis `H` zum direkten Charaktervergleich) oder wechselnder Grundton (relatives Hören).
 - **Interaktive Klaviatur (`F3`–`C6`)**: Zeigt Grundton, Intervall-/Akkordtöne und aktuell klingende Töne live an (im Prüfungsmodus automatisch verdeckt).
 
