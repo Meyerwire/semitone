@@ -38,6 +38,7 @@ Direktes Anspielen, Vergleichen und Analysieren aller Strukturen per Klick:
 - **Variables Tempo & Tondauer**: Stufenloser BPM-Regler (`40`–`240 BPM`), Tempo-Presets, ein **Zufalls-Modus (`60`–`200 BPM`)** für wechselnde Geschwindigkeiten pro Hörbeispiel sowie wählbare Artikulation/Tondauer (*Kurz / Staccato*, *Normal*, *Lang / Legato*).
 - **Grundton-Wahl**: Fester Bezugston (frei wählbar `C` bis `H` zum direkten Charaktervergleich) oder wechselnder Grundton (relatives Hören).
 - **Interaktive Klaviatur (`F3`–`C6`)**: Zeigt Grundton, Intervall-/Akkordtöne und aktuell klingende Töne live an (im Prüfungsmodus automatisch verdeckt).
+- **Installierbare PWA (Offline-fähig)**: Kann auf Desktop und Smartphone (Android/iOS) direkt als eigenständige App installiert und ohne Internetverbindung genutzt werden.
 
 ---
 
@@ -66,12 +67,17 @@ Anschließend im Browser `http://localhost:8080` aufrufen.
 
 ```text
 semitone/
-├── index.html       # Semantisches HTML-Grundgerüst & Studio-Leiste
+├── index.html            # Semantisches HTML-Grundgerüst & Studio-Leiste
+├── manifest.webmanifest  # Web App Manifest für PWA-Installation
+├── sw.js                 # Service Worker für Offline-Caching
+├── favicon.svg           # Vektor-Favicon (♯)
+├── icons/                # App-Icons (180px, 192px, 512px & Maskable)
 ├── css/
-│   └── styles.css   # Responsives Dark-/Light-Theme & Klaviatur-Layout
+│   └── styles.css        # Responsives Dark-/Light-Theme & Klaviatur-Layout
 └── js/
-    ├── theory.js    # Musiktheorie-Engine (Intervalle, 3-/4-Klänge, Umkehrungen, Notenschlüssel)
-    ├── audio.js     # Polyphoner Web-Audio-Synthesizer & Timing-Scheduler
-    └── app.js       # Anwendungslogik für Referenz-, Übungs- und Prüfungsmodus
+    ├── theory.js         # Musiktheorie-Engine (Intervalle, 3-/4-Klänge, Umkehrungen, Notenschlüssel)
+    ├── audio.js          # Polyphoner Web-Audio-Synthesizer & Timing-Scheduler
+    └── app.js            # Anwendungslogik für Referenz-, Übungs- und Prüfungsmodus
 ```
+
 
