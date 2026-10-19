@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Semitone – Musikalische Gehörbildung</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Kopfbereich & Hauptnavigation -->
+    <header class="top-header">
+      <div class="brand-area">
+        <div class="brand-logo" aria-hidden="true">♯</div>
+        <div>
+          <h1 class="brand-title">Semitone</h1>
+          <p class="brand-subtitle">Sachliche Gehörbildung · Intervalle, Dreiklänge &amp; Septakkorde</p>
+        </div>
+      </div>
+
+      <nav class="main-nav" aria-label="Hauptmodi">
+        <button type="button" class="nav-tab active" data-nav-tab="explore">
+          1. Freies Hören &amp; Referenz
+        </button>
+        <button type="button" class="nav-tab" data-nav-tab="practice">
+          2. Übungsmodus
+        </button>
+        <button type="button" class="nav-tab" data-nav-tab="exam">
+          3. Prüfungsmodus
+        </button>
+      </nav>
+
+      <div class="header-right">
+        <button type="button" class="btn btn-secondary btn-sm active" id="toggle-piano-btn" title="Interaktive Klaviatur ein-/ausblenden">
+          🎹 Klaviatur
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" id="theme-toggle-btn" title="Farbschema wechseln">
+          ☀ Hell
+        </button>
+      </div>
+    </header>
+
+    <!-- Globale Audio- & Spielweise-Leiste -->
+    <section class="studio-bar" aria-label="Audio- und Wiedergabeeinstellungen">
+      <div class="studio-control">
+        <label for="ctrl-timbre">Klangfarbe</label>
+        <select id="ctrl-timbre">
+          <option value="piano" selected>Klavier (Konzertflügel)</option>
+          <option value="epiano">E-Piano (Rhodes)</option>
+          <option value="strings">Streicher / Orgel (Dauerton)</option>
+          <option value="pure">Reiner Sinus-Referenzton</option>
+        </select>
+      </div>
+
+      <div class="studio-control">
+        <label for="ctrl-playmode">Spielweise</label>
+        <select id="ctrl-playmode">
+          <option value="arpeggio_harmonic" selected>Gebrochen + Zusammenklang</option>
+          <option value="ascending">Melodisch aufsteigend (↑)</option>
+          <option value="descending">Melodisch absteigend (↓)</option>
+          <option value="harmonic">Simultan / Harmonisch (||)</option>
+        </select>
+      </div>
+
+      <div class="studio-control">
+        <label for="ctrl-root-mode">Grundton-Modus</label>
+        <select id="ctrl-root-mode">
+          <option value="fixed" selected>Fester Bezugston (zum Vergleichen)</option>
+          <option value="random">Wechselnder Grundton (relatives Hören)</option>
+        </select>
+      </div>
+
+      <div class="studio-control">
+        <label for="ctrl-fixed-root">Fester Grundton</label>
+        <select id="ctrl-fixed-root">
+          <option value="0" selected>C</option>
+          <option value="1">Cis / Des</option>
+          <option value="2">D</option>
+          <option value="3">Dis / Es</option>
+          <option value="4">E</option>
+          <option value="5">F</option>
+          <option value="6">Fis / Ges</option>
+          <option value="7">G</option>
+          <option value="8">Gis / As</option>
+          <option value="9">A</option>
+          <option value="10">B (Ais)</option>
+          <option value="11">H</option>
+        </select>
+      </div>
+
+      <div class="studio-control">
+        <label for="ctrl-tempo">Tempo</label>
+        <select id="ctrl-tempo">
+          <option value="slow">Ruhig (Langsam)</option>
+          <option value="normal" selected>Mittel (Standard)</option>
+          <option value="fast">Zügig (Schnell)</option>
+        </select>
+      </div>
+    </section>
+
+    <!-- Hauptinhalt: 3 Ansichten -->
+    <main class="main-workspace">
+      <section id="view-explore" class="view-section">
+        <div id="explore-content"></div>
+      </section>
+
+      <section id="view-practice" class="view-section hidden">
+        <div id="practice-content"></div>
+      </section>
+
+      <section id="view-exam" class="view-section hidden">
+        <div id="exam-content"></div>
+      </section>
+    </main>
+
+    <!-- Interaktive Klaviatur (unten angedockt, ein-/ausblendbar) -->
+    <footer id="piano-drawer" class="piano-drawer">
+      <div class="piano-drawer-header">
+        <span class="piano-caption">Interaktive Klaviatur (F3 – C6) · Anklicken zum direkten Anspielen einzelner Töne</span>
+        <div class="piano-legend">
+          <span class="legend-item"><span class="legend-dot dot-root"></span> Grundton</span>
+          <span class="legend-item"><span class="legend-dot dot-marked"></span> Akkord-/Intervallton</span>
+          <span class="legend-item"><span class="legend-dot dot-playing"></span> Klingt gerade</span>
+        </div>
+      </div>
+      <div class="piano-scroll-wrap">
+        <div id="piano-keyboard" class="piano-keyboard"></div>
+      </div>
+    </footer>
+  </div>
+
+  <script defer src="js/theory.js"></script>
+  <script defer src="js/audio.js"></script>
+  <script defer src="js/app.js"></script>
+</body>
+</html>
+
