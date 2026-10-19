@@ -13,6 +13,7 @@ Direktes Anspielen, Vergleichen und Analysieren aller Strukturen per Klick:
   - **Feinbestimmung**: Alle 13 Intervalle innerhalb der Oktave (`r1`, `k2`, `g2`, `k3`, `g3`, `r4`, `Tritonus ü4/v5`, `r5`, `k6`, `g6`, `k7`, `g7`, `r8`) inkl. Frequenzverhältnis, Klangcharakter und Merkhilfen (Liedanfänge).
   - **Kombinierte Ansicht**: Rahmenintervalle und deren feine Varianten direkt nebeneinander vergleichen.
 - **Dreiklänge (3-Klänge)**:
+  - **Basis (Nur Dur & Moll)**: Einsteigermodus zur reinen Unterscheidung von Dur und Moll (optional auch mit Umkehrungen im Klang).
   - **Rahmenbestimmung**: Dur, Moll, Vermindert, Übermäßig (sowie optional `Sus4` und `Sus2`).
   - **Feinbestimmung inkl. Umkehrungen**: Grundstellung (`5/3`), 1. Umkehrung / Sextakkord (`6`), 2. Umkehrung / Quartsextakkord (`6/4`).
 - **Vierklänge / Septakkorde (4-Klänge)**:
@@ -20,11 +21,11 @@ Direktes Anspielen, Vergleichen und Analysieren aller Strukturen per Klick:
   - **Feinbestimmung inkl. Umkehrungen**: Dominantseptakkord (`Dom7`), Großer Dur-Septakkord (`Maj7`), Moll-Septakkord (`m7`), Halbverminderter Septakkord (`m7♭5` / `ø7`), Vollverminderter Septakkord (`dim7` / `°7`), Moll-Major-Septakkord (`mMaj7`) und Übermäßiger Major-Septakkord (`augMaj7`) in Grundstellung (`7`), Quintsext- (`6/5`), Terzquart- (`4/3`) und Sekundakkord (`2`).
 
 ### 2. Übungsmodus (Training mit Direkt-Feedback & Gegenhören)
-- Frei konfigurierbarer Aufgabenpool für Rahmen- und Feinbestimmung.
+- Frei konfigurierbarer Aufgabenpool für Basis- (Dur/Moll), Rahmen- und Feinbestimmung.
 - **Akustisches Gegenhören bei Fehlern**: Bei einer falschen Antwort lassen sich die *gefragte Aufgabe* und die *eigene (falsche) Antwort* über exakt demselben Grundton direkt nacheinander abspielen, um den klanglichen Unterschied sofort zu verinnerlichen.
 
 ### 3. Modularer Prüfungsmodus mit Benotung
-- **Individueller Prüfungskonfigurator**: Alle 6 Prüfungsmodule (*Intervalle Rahmen*, *Intervalle Fein*, *Dreiklänge Rahmen*, *Dreiklänge Fein inkl. Umkehrungen*, *Septakkorde Rahmen*, *Septakkorde Fein*) sind frei zu- und abschaltbar, jeweils mit frei wählbarer Aufgabenanzahl.
+- **Individueller Prüfungskonfigurator**: Alle 7 Prüfungsmodule (*Intervalle Rahmen*, *Intervalle Fein*, *Dreiklänge Basis (Dur & Moll)*, *Dreiklänge Rahmen*, *Dreiklänge Fein inkl. Umkehrungen*, *Septakkorde Rahmen*, *Septakkorde Fein*) sind frei zu- und abschaltbar, jeweils mit frei wählbarer Aufgabenanzahl.
 - **Vorlagen**: Schnellwahl für *Basis-Prüfung*, *Standard-Prüfung* und *Hochschul-Aufnahmeprüfung*.
 - **Auswertung & Benotung**:
   - Gesamtnote nach deutschem Notenschlüssel (`1,0` bis `5,0`) inkl. Prädikat und Prozentwert.

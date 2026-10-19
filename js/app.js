@@ -22,7 +22,7 @@ window.SemitoneApp = (() => {
     explore: {
       category: 'intervals', // 'intervals' | 'triads' | 'sevenths'
       intervalView: 'both',  // 'coarse' | 'fine' | 'both'
-      triadView: 'fine',     // 'coarse' | 'fine'
+      triadView: 'fine',     // 'basic' | 'coarse' | 'fine'
       seventhView: 'fine',   // 'coarse' | 'fine'
       lastPlayedInfo: null,  // { title, subtitle, notes, structure, character, hint, midiNotes }
       previousPlayedInfo: null // Für A/B-Vergleich
@@ -30,9 +30,10 @@ window.SemitoneApp = (() => {
 
     // 2. Übungsmodus (Practice) State
     practice: {
-      category: 'intervals_fine', // 'intervals_coarse' | 'intervals_fine' | 'triads_coarse' | 'triads_fine' | 'sevenths_coarse' | 'sevenths_fine'
+      category: 'intervals_fine', // 'intervals_coarse' | 'intervals_fine' | 'triads_basic' | 'triads_coarse' | 'triads_fine' | 'sevenths_coarse' | 'sevenths_fine'
       enabledFineIntervals: new Set(Theory.FINE_INTERVALS.map((i) => i.id)),
       enabledCoarseIntervals: new Set(Theory.COARSE_INTERVALS.map((i) => i.id)),
+      triadBasicAllowInversions: false,
       enabledTriads: new Set(['dur', 'moll', 'vermindert', 'uebermaessig']),
       enabledTriadInversions: new Set(['inv0', 'inv1', 'inv2']),
       askTriadInversion: true,
@@ -67,6 +68,12 @@ window.SemitoneApp = (() => {
           count: 6,
           title: 'Intervalle – Feinbestimmung',
           desc: 'Exakte Bestimmung (klein, groß, rein, Tritonus)'
+        },
+        triads_basic: {
+          enabled: false,
+          count: 4,
+          title: 'Dreiklänge – Basis (Nur Dur & Moll)',
+          desc: 'Reine Unterscheidung zwischen Dur- und Moll-Dreiklang'
         },
         triads_coarse: {
           enabled: true,
@@ -448,11 +455,14 @@ window.SemitoneApp = (() => {
     } else if (category === 'triads') {
       subControlsHtml = `
         <div class="segmented-control" role="group" aria-label="Dreiklang-Ansicht">
+          <button type="button" class="seg-btn ${triadView === 'basic' ? 'active' : ''}" data-triad-view="basic">
+            Basis (Nur Dur &amp; Moll)
+          </button>
           <button type="button" class="seg-btn ${triadView === 'coarse' ? 'active' : ''}" data-triad-view="coarse">
-            Rahmenbestimmung (Grundtypen)
+            Rahmenbestimmung (4 Grundtypen)
           </button>
           <button type="button" class="seg-btn ${triadView === 'fine' ? 'active' : ''}" data-triad-view="fine">
-            Feinbestimmung (inkl. Umkehrungen & Sus)
+            Feinbestimmung (inkl. Umkehrungen &amp; Sus)
           </button>
         </div>
       `;
@@ -777,7 +787,12 @@ window.SemitoneApp = (() => {
   }
 
   function renderExploreTriads(viewMode) {
-    const list = viewMode === 'coarse' ? Theory.TRIAD_TYPES.filter((t) => t.isCore) : Theory.TRIAD_TYPES;
+    const list =
+      viewMode === 'basic'
+        ? Theory.TRIAD_TYPES.filter((t) => t.id === 'dur' || t.id === 'moll')
+        : viewMode === 'coarse'
+        ? Theory.TRIAD_TYPES.filter((t) => t.isCore)
+        : Theory.TRIAD_TYPES;
     return `
       <div class="cards-grid triad-grid">
         ${list
@@ -948,6 +963,28 @@ window.SemitoneApp = (() => {
       };
     }
 
+    if (category === 'triads_basic') {
+      const basicTriads = Theory.TRIAD_TYPES.filter((t) => t.id === 'dur' || t.id === 'moll');
+      const chosenTriad = pickRandom(basicTriads);
+      const allowInv = state.activeTab === 'practice' && state.practice.triadBasicAllowInversions;
+      const chosenInv = allowInv ? pickRandom(Theory.TRIAD_INVERSIONS) : Theory.TRIAD_INVERSIONS[0];
+      const midiNotes = Theory.buildChordNotes(rootMidi, chosenTriad.intervals, chosenInv.index);
+
+      return {
+        category,
+        categoryLabel: 'Dreiklänge – Basis (Dur & Moll)',
+        rootMidi,
+        midiNotes,
+        correctPrimaryId: chosenTriad.id,
+        correctPrimaryLabel: chosenTriad.name,
+        detailSubLabel: `${chosenTriad.structure} · ${chosenInv.name}`,
+        needsInversion: false,
+        correctInversionId: chosenInv.id,
+        correctInversionLabel: chosenInv.name,
+        playsUsed: 0
+      };
+    }
+
     if (category === 'triads_coarse') {
       const poolIds = customPool
         ? Array.from(customPool)
@@ -1068,10 +1105,11 @@ window.SemitoneApp = (() => {
       if (!fine) return question.midiNotes;
       return [rootMidi, rootMidi + fine.semitones];
     }
-    if (cat === 'triads_coarse' || cat === 'triads_fine') {
+    if (cat === 'triads_basic' || cat === 'triads_coarse' || cat === 'triads_fine') {
       const triad = Theory.TRIAD_TYPES.find((t) => t.id === chosenPrimaryId);
       if (!triad) return question.midiNotes;
-      const inv = Theory.TRIAD_INVERSIONS.find((i) => i.id === (chosenInversionId || 'inv0'));
+      const fallbackInvId = question.correctInversionId || 'inv0';
+      const inv = Theory.TRIAD_INVERSIONS.find((i) => i.id === (chosenInversionId || fallbackInvId));
       return Theory.buildChordNotes(rootMidi, triad.intervals, inv ? inv.index : 0);
     }
     if (cat === 'sevenths_coarse') {
@@ -1114,6 +1152,15 @@ window.SemitoneApp = (() => {
         short: f.short,
         label: f.name,
         sub: `${f.semitones} HT`
+      }));
+    }
+
+    if (category === 'triads_basic') {
+      return Theory.TRIAD_TYPES.filter((t) => t.id === 'dur' || t.id === 'moll').map((t) => ({
+        id: t.id,
+        short: t.short,
+        label: t.name,
+        sub: t.structure
       }));
     }
 
@@ -1266,13 +1313,17 @@ window.SemitoneApp = (() => {
               <strong>Intervalle: Feinbestimmung</strong>
               <span>Alle 13 Intervalle (klein, groß, rein, Tritonus)</span>
             </button>
+            <button type="button" class="vnav-btn ${category === 'triads_basic' ? 'active' : ''}" data-prac-cat="triads_basic">
+              <strong>Dreiklänge: Basis (Nur Dur &amp; Moll)</strong>
+              <span>Reine Unterscheidung zwischen Dur und Moll</span>
+            </button>
             <button type="button" class="vnav-btn ${category === 'triads_coarse' ? 'active' : ''}" data-prac-cat="triads_coarse">
               <strong>Dreiklänge: Rahmenbestimmung</strong>
               <span>Dur, Moll, Vermindert, Übermäßig (Grundstellung)</span>
             </button>
             <button type="button" class="vnav-btn ${category === 'triads_fine' ? 'active' : ''}" data-prac-cat="triads_fine">
               <strong>Dreiklänge: Feinbestimmung</strong>
-              <span>Inklusive Umkehrungen (5/3, 6, 6/4) & Sus2/Sus4</span>
+              <span>Inklusive Umkehrungen (5/3, 6, 6/4) &amp; Sus2/Sus4</span>
             </button>
             <button type="button" class="vnav-btn ${category === 'sevenths_coarse' ? 'active' : ''}" data-prac-cat="sevenths_coarse">
               <strong>Septakkorde: Rahmenbestimmung</strong>
@@ -1499,6 +1550,19 @@ window.SemitoneApp = (() => {
       `;
     }
 
+    if (category === 'triads_basic') {
+      return `
+        <h4 class="filter-heading">Dur &amp; Moll – Optionen</h4>
+        <p class="text-muted mb-sm">Es werden ausschließlich Dur- und Moll-Dreiklänge abgefragt.</p>
+        <label class="toggle-row">
+          <input type="checkbox" id="toggle-basic-triad-inv" ${
+            state.practice.triadBasicAllowInversions ? 'checked' : ''
+          } />
+          <span>Auch Umkehrungen erklingen lassen (nur Dur/Moll gefragt)</span>
+        </label>
+      `;
+    }
+
     if (category === 'triads_coarse' || category === 'triads_fine') {
       return `
         <h4 class="filter-heading">Aktive Dreiklangstypen</h4>
@@ -1559,6 +1623,14 @@ window.SemitoneApp = (() => {
   }
 
   function bindPracticePoolFilterEvents(container) {
+    const basicTriadInvCb = document.getElementById('toggle-basic-triad-inv');
+    if (basicTriadInvCb) {
+      basicTriadInvCb.addEventListener('change', () => {
+        state.practice.triadBasicAllowInversions = basicTriadInvCb.checked;
+        generateNextPracticeQuestion(false);
+      });
+    }
+
     container.querySelectorAll('[data-toggle-coarse-int]').forEach((cb) => {
       cb.addEventListener('change', () => {
         const id = cb.dataset.toggleCoarseInt;
@@ -1883,8 +1955,9 @@ window.SemitoneApp = (() => {
           state.exam.modules.intervals_coarse.enabled = true;
           state.exam.modules.intervals_coarse.count = 5;
           state.exam.modules.intervals_fine.enabled = false;
-          state.exam.modules.triads_coarse.enabled = true;
-          state.exam.modules.triads_coarse.count = 5;
+          state.exam.modules.triads_basic.enabled = true;
+          state.exam.modules.triads_basic.count = 5;
+          state.exam.modules.triads_coarse.enabled = false;
           state.exam.modules.triads_fine.enabled = false;
           state.exam.modules.sevenths_coarse.enabled = false;
           state.exam.modules.sevenths_fine.enabled = false;
@@ -1892,6 +1965,7 @@ window.SemitoneApp = (() => {
           state.exam.modules.intervals_coarse.enabled = false;
           state.exam.modules.intervals_fine.enabled = true;
           state.exam.modules.intervals_fine.count = 6;
+          state.exam.modules.triads_basic.enabled = false;
           state.exam.modules.triads_coarse.enabled = true;
           state.exam.modules.triads_coarse.count = 4;
           state.exam.modules.triads_fine.enabled = false;
@@ -1904,6 +1978,7 @@ window.SemitoneApp = (() => {
           state.exam.modules.intervals_coarse.count = 4;
           state.exam.modules.intervals_fine.enabled = true;
           state.exam.modules.intervals_fine.count = 6;
+          state.exam.modules.triads_basic.enabled = false;
           state.exam.modules.triads_coarse.enabled = false;
           state.exam.modules.triads_fine.enabled = true;
           state.exam.modules.triads_fine.count = 5;
